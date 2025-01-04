@@ -1,13 +1,12 @@
 # Data-analysis-of-hand-drawn-symbols
 
-
 ## Introduction
 
 In this Assignment, data from Assignment 2 is used to solve classification problems by Machine learning. All models predicting the class label will be fit and evaluate classifier for Assignment 2 data.
 
 Prepare the packages that would be used later.
 
-```{r setup,warning=FALSE,include=FALSE}
+```{r
 library(caret)
 library(dplyr)
 library(MLeval)
@@ -22,7 +21,6 @@ Read the data into r and set the random seed to ensure the reproducibility of th
 data <- read.csv("features.csv")
 set.seed(42)
 ```
-
 
 # Section 1
 
@@ -49,11 +47,11 @@ train <- data[index,]
 test <- data[-index,]
 ```
 
-Using the "logistic regression model" to predict the probability of the "letter" category and report the test data.  
+Using the "logistic regression model" to predict the probability of the "letter" category and report the test data.
 
 First of all, I choose the glm() function to build a model by training data with nr_pix and aspect_ratio features. Then predict the data with test data and probably data, calculate TPR by "TPR = TP/(TP+FN)" function and FPR by "FPR = FP/(FP+TN)" function and use the confusionMatrix() function to calculate data such as accuracy, precision, recall and F1-score.
 
-```{r warning=FALSE}
+```{r
 model <-glm(letter ~ nr_pix + aspect_ratio, 
            data = train, 
            family = binomial) 
@@ -74,7 +72,7 @@ confusionMatrix(data=pred, reference=test$letter, positive="Yes", mode="prec_rec
 
 However, after reading the question1.2 find there is a function in package "caret" called "train" which can build the logistic regression model and do the cross-validation.
 
-```{r warning=FALSE}
+```{r
 model_1 <- train(letter ~ nr_pix + aspect_ratio, data=train, 
                   method="glm", family="binomial")
 pred_1 <- predict(model_1, test)
@@ -94,7 +92,7 @@ These two methods get the same result. The accuracy of the model on the test set
 
 Using the cross-validation method to calculate the data by train() function and getTrainPerf() function from the "caret" package. Specially, getTrainPerf() function gives the mean performance results of the best tuned parameters averaged across the repeated cross validations folds.
 
-```{r warning=FALSE}
+```{r
 train_control <- trainControl(method="cv", number=5, savePredictions=T, classProbs=T)
 
 model_1_cv <- train(letter ~ nr_pix + aspect_ratio, data=data, 
@@ -115,21 +113,34 @@ The model has an accuracy of  0.9429, a true positive rate of 0.9250, a false po
 
 ROC mapping is painted for performance visualization. Using "Decision Trees" to predict data and evalm() function for assessing the performance of the model.
 
-```{r fig.show="hide",warning=FALSE}
+```{r
 pred_1_cv <- predict(model_1_cv, type = "prob")
 roc <- evalm(data.frame(pred_1_cv, data$letter), positive='Yes', plots='r')
 roc$stdres$Group1
 ```
 
-```{r results='hide'}
+```{r
 roc
 roc <- evalm(data.frame(pred_1_cv, data$letter), positive='Yes', plots='r')
 ```
 
+![1736032525305](image/README/1736032525305.png)
+
+![1736032540359](image/README/1736032540359.png)
+
+![1736032561168](image/README/1736032561168.png)
+
+![1736032573366](image/README/1736032573366.png)
+
+![1736032605085](image/README/1736032605085.png)
+
+
+
+
+
 The AUC of the model can reach 0.99, which is a great model! When the false positive rate is 0.1, the true positive rate is almost close to 1. This classification is very effective.
 
 Plotting the curve of the true probability versus the predicted probability, it can be seen that only around the probability of 0.5, which is not a straight line, there is a little deviation. After the probability is less than 0.25 or more than 0.75, it is a perfectly straight line. It indicates that the model only classifies some samples with relatively small differences slightly poorly and classifies samples with relatively large differences very well.
-
 
 # Section 2
 
@@ -206,7 +217,7 @@ According to the results, data for letter and xclaim is centralized in Reference
 
 ## Section 2.4
 
-All data is collected into one data frame. 
+All data is collected into one data frame.
 
 ```{r}
 acc_k <- data.frame(Accuracy=c(acc1,acc2), K=c(seq(1,13,by=2),seq(1,13,by=2)),
@@ -221,8 +232,13 @@ ggplot(data = acc_k,aes(x=K,y=Accuracy,group=Model,color=Model,shape=Model))+
   theme_bw()
 ```
 
-It is clear that when testing with training data, the accuracy is significantly higher than that of cross-validation. But using the training data for testing and tuning the parameters, k=1 will be chosen, which is incorrect because this will only perform well on the training data, without good generalization performance, meaning that the model will be overfitted. And in cross-validation, because the training data and test data are different, the model will have better generalization performance although the accuracy is reduced on the test data.
 
+
+![1736032636825](image/README/1736032636825.png)
+
+
+
+It is clear that when testing with training data, the accuracy is significantly higher than that of cross-validation. But using the training data for testing and tuning the parameters, k=1 will be chosen, which is incorrect because this will only perform well on the training data, without good generalization performance, meaning that the model will be overfitted. And in cross-validation, because the training data and test data are different, the model will have better generalization performance although the accuracy is reduced on the test data.
 
 # Section 3
 
@@ -238,7 +254,7 @@ test.larger  <- data.larger[-trainIndex.larger,]
 
 ## Section 3.1
 
-Accuracy is a set metric for comparing models. Variable named "control" prepare for 5-fold cross-validation. 
+Accuracy is a set metric for comparing models. Variable named "control" prepare for 5-fold cross-validation.
 Using expand.grid()function to check all the possible tuning parameters and return the optimized parameters on which the model gives the best accuracy automatically. As shown before, the train() function can modelling and validated, parameter "method=rf" means modelling the Random Forest Model and its Tuning Parameter is mtry. Variable "modellist" is used to store data for the train with different ntree parameters.
 
 ```{r}
@@ -264,6 +280,12 @@ dotplot(results)
 ```{r}
 modellist$`175`$results
 ```
+
+
+
+![1736032683886](image/README/1736032683886.png)
+
+
 
 The accuracy of the model is not high for both more and fewer numbers of decision trees, because when the number of decision trees is high, it causes overfitting; when the number of decision trees is low, it causes underfitting. Also, when the number of decision trees is determined, the number of predictor variables considered at each node varies, and the accuracy rate varies.
 
@@ -293,6 +315,7 @@ t.test(accuracy.max, mu=0.7769, alternative="greater")
 The p-value of the one-sided hypothesis test is less than 0.05, indicating that the original hypothesis can be rejected, and the alternative hypothesis is accepted at the 95% confidence level. That is, the mean value of the accuracy scores of the 15 cross-validations is greater than 0.7769. This indicates that the performance of the above-selected model is not significantly better than chance.
 
 # Reference
+
 - https://www.kaggle.com/code/tentotheminus9/quick-glm-using-caret/notebook
 - https://stackoverflow.com/questions/41171045/cross-validate-predictions-for-caret-and-svm
 - https://r-coder.com/set-seed-r/)
